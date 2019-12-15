@@ -40,7 +40,7 @@ public class MapInfoLine extends DrawableHelperBase
   {
     TextRenderer textRenderer = client.textRenderer;
     
-    int width = client.window.getScaledWidth();
+    int width = client.getWindow().getScaledWidth();
     
     switch (alignment)
     {

@@ -25,7 +25,7 @@ public class ChunkCache
   
   static
   {
-    BLACK_IMAGE.fillRGBA(0, 0, 16, 16, 0xff000000);
+    BLACK_IMAGE.fillRect(0, 0, 16, 16, 0xff000000);
   }
   
   public static void setCurrentLayer(MapLayer layer)
@@ -62,7 +62,7 @@ public class ChunkCache
         loader.world = world;
         loader.clear();
         NativeImage img = Mappy.map.getImage();
-        img.fillRGBA(0, 0, img.getWidth(), img.getHeight(), MapLayerProcessor.BLACK);
+        img.fillRect(0, 0, img.getWidth(), img.getHeight(), MapLayerProcessor.BLACK);
         
         System.out.println("Updated world " + world + " " + dimId);
         

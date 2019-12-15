@@ -75,10 +75,10 @@ public class DrawableHelperBase extends DrawableHelper
     float b = (float)(color & 255) / 255.0F;
   
     Tessellator tessellator = Tessellator.getInstance();
-    BufferBuilder builder = tessellator.getBufferBuilder();
+    BufferBuilder builder = tessellator.getBuffer();
     GlStateManager.enableBlend();
     GlStateManager.disableTexture();
-    GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+    GlStateManager.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA.value, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA.value, GlStateManager.SrcFactor.ONE.value, GlStateManager.DstFactor.ZERO.value);
     GlStateManager.color4f(r, g, b, a);
     builder.begin(GL11.GL_TRIANGLES, VertexFormats.POSITION);
     builder.vertex(x1, y1, 0).next();
@@ -97,10 +97,10 @@ public class DrawableHelperBase extends DrawableHelper
     float b = (float)(color & 255) / 255.0F;
   
     Tessellator tessellator = Tessellator.getInstance();
-    BufferBuilder builder = tessellator.getBufferBuilder();
+    BufferBuilder builder = tessellator.getBuffer();
     GlStateManager.enableBlend();
     GlStateManager.disableTexture();
-    GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+    GlStateManager.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA.value, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA.value, GlStateManager.SrcFactor.ONE.value, GlStateManager.DstFactor.ZERO.value);
     GlStateManager.color4f(r, g, b, a);
     builder.begin(GL11.GL_LINES, VertexFormats.POSITION);
     builder.vertex(x1, y1, 0).next();

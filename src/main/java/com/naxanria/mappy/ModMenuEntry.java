@@ -2,88 +2,132 @@ package com.naxanria.mappy;
 
 import com.naxanria.mappy.client.DrawPosition;
 import com.naxanria.mappy.config.Config;
-import com.naxanria.mappy.config.ConfigBase;
 import com.naxanria.mappy.config.Settings;
 import io.github.prospector.modmenu.api.ModMenuApi;
-import me.shedaniel.cloth.api.ConfigScreenBuilder;
-import me.shedaniel.cloth.gui.entries.*;
-import net.minecraft.client.gui.Screen;
+import me.shedaniel.clothconfig2.api.ConfigBuilder;
+import me.shedaniel.clothconfig2.api.ConfigCategory;
+import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.impl.builders.EnumSelectorBuilder;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
 
-import java.util.Set;
 import java.util.function.Function;
 
 public class ModMenuEntry implements ModMenuApi
 {
   private static final String RESET = "text.cloth.reset_value";
-  
+
   @Override
   public String getModId()
   {
     return Mappy.MODID;
   }
-  
+
   private Screen getScreen(Screen parent)
   {
-    ConfigScreenBuilder builder = ConfigScreenBuilder.create(parent, "Mappy Config", this::saveConfig);
-    
-    ConfigScreenBuilder.CategoryBuilder general = builder.addCategory(lang("category.general"));
-    general.addOption(new IntegerListEntry(lang("offset"), Settings.offset, RESET, () -> Settings.offset, (i) -> Settings.offset = i));
-    general.addOption(new EnumListEntry<>(lang("draw_position"), DrawPosition.class, Settings.drawPosition, RESET, () -> Settings.drawPosition, (p) -> Settings.drawPosition = p));
-    general.addOption(new IntegerListEntry(lang("map_size"), Settings.mapSize, RESET, () -> Settings.mapSize, (i) -> Settings.mapSize = i).setMinimum(32).setMaximum(1024));
+    ConfigBuilder builder = ConfigBuilder.create();
+    builder.setParentScreen(parent);
+    builder.setTitle("Mappy Config");
+    builder.setSavingRunnable(this::saveConfig);
+
+    ConfigEntryBuilder entryBuilder = ConfigEntryBuilder.create();
+    entryBuilder.setResetButtonKey(RESET);
+
+    ConfigCategory general = builder.getOrCreateCategory(lang("category.general"));
+    general.addEntry(entryBuilder.startIntField(lang("offset"), Settings.offset).setDefaultValue(() -> Settings.offset)
+      .setSaveConsumer((i) -> Settings.offset = i).build());
+    EnumSelectorBuilder<DrawPosition> drawPositionEntry =
+      entryBuilder.startEnumSelector(lang("draw_position"), DrawPosition.class, Settings.drawPosition);
+    drawPositionEntry.setDefaultValue(() -> Settings.drawPosition);
+    drawPositionEntry.setSaveConsumer((p) -> Settings.drawPosition = p);
+    general.addEntry(drawPositionEntry.build());
+    general.addEntry(
+      entryBuilder.startIntField(lang("map_size"), Settings.mapSize).setDefaultValue(() -> Settings.mapSize)
+        .setSaveConsumer((i) -> Settings.mapSize = i).setMin(32).setMax(1024).build());
 //    general.addOption(new IntegerSliderEntry(lang("map_scale"), 1, 8, Settings.scale, RESET, () -> Settings.scale, (i) -> Settings.scale = i));
-    general.addOption(new BooleanListEntry(lang("map_move"), Settings.moveMapForEffects, RESET, () -> Settings.moveMapForEffects, (b) -> Settings.moveMapForEffects = b));
-    general.addOption(new BooleanListEntry(lang("show_in_chat"), Settings.showInChat, RESET, () -> Settings.showInChat, (b) -> Settings.showInChat = b));
-    
-    general.addOption(new BooleanListEntry(lang("shaded"), Settings.shaded, RESET, () -> Settings.shaded, (b) -> Settings.shaded = b));
-    general.addOption(new IntegerSliderEntry(lang("shade_strength"),2, 16, 18 - Settings.maxDifference, RESET, () -> 18 - Settings.maxDifference, (i) -> Settings.maxDifference = 18 - i));
-    
-    
-    ConfigScreenBuilder.CategoryBuilder mapInfo = builder.addCategory(lang("category.info"));
-    mapInfo.addOption(new BooleanListEntry(lang("show_grid"), Settings.drawChunkGrid, RESET, () -> Settings.drawChunkGrid, (b) -> Settings.drawChunkGrid = b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_position"), Settings.showPosition, RESET, () -> Settings.showPosition, (b) -> Settings.showPosition = b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_biome"), Settings.showBiome, RESET, () -> Settings.showBiome, (b) -> Settings.showBiome= b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_fps"), Settings.showFPS, RESET, () -> Settings.showFPS, (b) -> Settings.showFPS = b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_game_time"), Settings.showTime, RESET, () -> Settings.showTime, (b) -> Settings.showTime = b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_direction"), Settings.showDirection, RESET, () -> Settings.showDirection, (b) -> Settings.showDirection = b));
-    
-    mapInfo.addOption(new BooleanListEntry(lang("show_player_names"), Settings.showPlayerNames, RESET, () -> Settings.showPlayerNames, (b) -> Settings.showPlayerNames = b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_player_heads"), Settings.showPlayerHeads, RESET, () -> Settings.showPlayerHeads, (b) -> Settings.showPlayerHeads = b));
-    mapInfo.addOption(new BooleanListEntry(lang("show_entities"), Settings.showEntities, RESET, () -> Settings.showEntities, (b) -> Settings.showEntities = b));
-  
-    ConfigScreenBuilder.CategoryBuilder optimization = builder.addCategory(lang("category.optimization"));
-    optimization.addOption(new IntegerListEntry(lang("update_cycle"), Settings.updatePerCycle, RESET, () -> Settings.updatePerCycle, (i) -> Settings.updatePerCycle = i).setMinimum(1).setMaximum(1000));
-    optimization.addOption(new IntegerListEntry(lang("prune_delay"), Settings.pruneDelay, RESET, () -> Settings.pruneDelay, (i) -> Settings.pruneDelay = i).setMinimum(10).setMaximum(600));
-    optimization.addOption(new IntegerListEntry(lang("prune_amount"), Settings.pruneAmount, RESET, () -> Settings.pruneAmount, (i) -> Settings.pruneAmount = i).setMinimum(100).setMaximum(5000));
-    
+    general.addEntry(entryBuilder.startBooleanToggle(lang("map_move"), Settings.moveMapForEffects)
+      .setDefaultValue(() -> Settings.moveMapForEffects).setSaveConsumer((b) -> Settings.moveMapForEffects = b)
+      .build());
+    general.addEntry(entryBuilder.startBooleanToggle(lang("show_in_chat"), Settings.showInChat)
+      .setDefaultValue(() -> Settings.showInChat).setSaveConsumer((b) -> Settings.showInChat = b).build());
+
+    general.addEntry(
+      entryBuilder.startBooleanToggle(lang("shaded"), Settings.shaded).setDefaultValue(() -> Settings.shaded)
+        .setSaveConsumer((b) -> Settings.shaded = b).build());
+    general.addEntry(entryBuilder.startIntSlider(lang("shade_strength"), 2, 16, 18 - Settings.maxDifference)
+      .setDefaultValue(() -> 18 - Settings.maxDifference).setSaveConsumer((i) -> Settings.maxDifference = 18 - i)
+      .build());
+
+
+    ConfigCategory mapInfo = builder.getOrCreateCategory(lang("category.info"));
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_grid"), Settings.drawChunkGrid)
+      .setDefaultValue(() -> Settings.drawChunkGrid).setSaveConsumer((b) -> Settings.drawChunkGrid = b).build());
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_position"), Settings.showPosition)
+      .setDefaultValue(() -> Settings.showPosition).setSaveConsumer((b) -> Settings.showPosition = b).build());
+    mapInfo.addEntry(
+      entryBuilder.startBooleanToggle(lang("show_biome"), Settings.showBiome).setDefaultValue(() -> Settings.showBiome)
+        .setSaveConsumer((b) -> Settings.showBiome = b).build());
+    mapInfo.addEntry(
+      entryBuilder.startBooleanToggle(lang("show_fps"), Settings.showFPS).setDefaultValue(() -> Settings.showFPS)
+        .setSaveConsumer((b) -> Settings.showFPS = b).build());
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_game_time"), Settings.showTime)
+      .setDefaultValue(() -> Settings.showTime).setSaveConsumer((b) -> Settings.showTime = b).build());
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_direction"), Settings.showDirection)
+      .setDefaultValue(() -> Settings.showDirection).setSaveConsumer((b) -> Settings.showDirection = b).build());
+
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_player_names"), Settings.showPlayerNames)
+      .setDefaultValue(() -> Settings.showPlayerNames).setSaveConsumer((b) -> Settings.showPlayerNames = b).build());
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_player_heads"), Settings.showPlayerHeads)
+      .setDefaultValue(() -> Settings.showPlayerHeads).setSaveConsumer((b) -> Settings.showPlayerHeads = b).build());
+    mapInfo.addEntry(entryBuilder.startBooleanToggle(lang("show_entities"), Settings.showEntities)
+      .setDefaultValue(() -> Settings.showEntities).setSaveConsumer((b) -> Settings.showEntities = b).build());
+
+    ConfigCategory optimization = builder.getOrCreateCategory(lang("category.optimization"));
+    optimization.addEntry(entryBuilder.startIntField(lang("update_cycle"), Settings.updatePerCycle)
+      .setDefaultValue(() -> Settings.updatePerCycle).setSaveConsumer((i) -> Settings.updatePerCycle = i).setMin(1)
+      .setMax(1000).build());
+    optimization.addEntry(
+      entryBuilder.startIntField(lang("prune_delay"), Settings.pruneDelay).setDefaultValue(() -> Settings.pruneDelay)
+        .setSaveConsumer((i) -> Settings.pruneDelay = i).setMin(10).setMax(600).build());
+    optimization.addEntry(
+      entryBuilder.startIntField(lang("prune_amount"), Settings.pruneAmount).setDefaultValue(() -> Settings.pruneAmount)
+        .setSaveConsumer((i) -> Settings.pruneAmount = i).setMin(100).setMax(5000).build());
+
     if (Settings.showItemConfigInGame)
     {
-      ConfigScreenBuilder.CategoryBuilder items = builder.addCategory(lang("category.items"));
-      items.addOption(new TextListEntry(lang("item_description_name"), lang("item_description")));
-      items.addOption(new BooleanListEntry(lang("item_in_hotbar"), Settings.inHotBar, RESET, () -> Settings.inHotBar, (b) -> Settings.inHotBar = b));
-      items.addOption(new StringListEntry(lang("item_show_map"), Settings.mapItem, RESET, () -> Settings.mapItem, (s) -> Settings.mapItem = s));
-      items.addOption(new StringListEntry(lang("item_show_position"), Settings.positionItem, RESET, () -> Settings.positionItem, (s) -> Settings.positionItem = s));
-      items.addOption(new StringListEntry(lang("item_show_biome"), Settings.biomeItem, RESET, () -> Settings.biomeItem, (s) -> Settings.biomeItem = s));
-      items.addOption(new StringListEntry(lang("item_show_time"), Settings.timeItem, RESET, () -> Settings.timeItem, (s) -> Settings.timeItem = s));
+      ConfigCategory items = builder.getOrCreateCategory(lang("category.items"));
+      items.addEntry(entryBuilder.startTextDescription(lang("item_description")).build());
+      items.addEntry(entryBuilder.startBooleanToggle(lang("item_in_hotbar"), Settings.inHotBar)
+        .setDefaultValue(() -> Settings.inHotBar).setSaveConsumer((b) -> Settings.inHotBar = b).build());
+      items.addEntry(
+        entryBuilder.startTextField(lang("item_show_map"), Settings.mapItem).setDefaultValue(() -> Settings.mapItem)
+          .setSaveConsumer((s) -> Settings.mapItem = s).build());
+      items.addEntry(entryBuilder.startTextField(lang("item_show_position"), Settings.positionItem)
+        .setDefaultValue(() -> Settings.positionItem).setSaveConsumer((s) -> Settings.positionItem = s).build());
+      items.addEntry(entryBuilder.startTextField(lang("item_show_biome"), Settings.biomeItem)
+        .setDefaultValue(() -> Settings.biomeItem).setSaveConsumer((s) -> Settings.biomeItem = s).build());
+      items.addEntry(
+        entryBuilder.startTextField(lang("item_show_time"), Settings.timeItem).setDefaultValue(() -> Settings.timeItem)
+          .setSaveConsumer((s) -> Settings.timeItem = s).build());
     }
     builder.setDoesConfirmSave(false);
-    
+
     return builder.build();
   }
-  
+
   private String lang(String key)
   {
     return I18n.translate("mappy.config." + key);
   }
-  
-  
-  private void saveConfig(ConfigScreenBuilder.SavedConfig config)
+
+
+  private void saveConfig()
   {
     Config.instance.save();
     System.out.println("Saved config");
     Mappy.map.onConfigChanged();
   }
-  
+
   @Override
   public Function<Screen, ? extends Screen> getConfigScreenFactory()
   {

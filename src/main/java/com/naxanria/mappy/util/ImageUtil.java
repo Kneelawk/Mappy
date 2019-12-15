@@ -52,7 +52,7 @@ public class ImageUtil
           continue;
         }
         
-        destination.setPixelRGBA(xp, yp, toWrite.getPixelRGBA(xOffset, yOffset));
+        destination.setPixelRgba(xp, yp, toWrite.getPixelRgba(xOffset, yOffset));
       }
     }
     

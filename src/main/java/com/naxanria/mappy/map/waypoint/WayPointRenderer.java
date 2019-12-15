@@ -34,8 +34,8 @@ public class WayPointRenderer extends DrawableHelperBase
   
   private void renderWaypoint(WayPoint wayPoint, PlayerEntity player)
   {
-    float dx = (float) Math.abs(wayPoint.pos.getX() - player.x);
-    float dy = (float) Math.abs(wayPoint.pos.getZ() - player.z);
+    float dx = (float) Math.abs(wayPoint.pos.getX() - player.getX());
+    float dy = (float) Math.abs(wayPoint.pos.getZ() - player.getZ());
     
     float viewAngle = Math.abs(player.headYaw % 360);
     // todo: get actual field of view
@@ -55,14 +55,15 @@ public class WayPointRenderer extends DrawableHelperBase
     
     float scale = angle / (viewFov);
     int size = 12;
-    int x = (int) MathUtil.clamp(client.window.getScaledWidth() * scale - size / 2, 0, client.window.getScaledWidth() - size);
+    int x = (int) MathUtil.clamp(
+            client.getWindow().getScaledWidth() * scale - size / 2, 0, client.getWindow().getScaledWidth() - size);
     int y = 4;
     
     diamond(x, y, size, size, wayPoint.color);
     
     int dist = (int) MathUtil.getDistance(wayPoint.pos, player.getBlockPos());
     
-    drawStringCenteredBound(client.textRenderer, dist + "m", x + size / 2, y, 0, client.window.getScaledWidth(), WHITE);
+    drawStringCenteredBound(client.textRenderer, dist + "m", x + size / 2, y, 0, client.getWindow().getScaledWidth(), WHITE);
     
 //    BeaconBlockEntityRenderer.renderLightBeam(-0.43, -2.66, -0.55, delta, 1, 39361, 0, 1024, ColorUtil.toFloats(wayPoint.color), 0.2, 0.25);
   }

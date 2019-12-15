@@ -8,6 +8,7 @@ import com.naxanria.mappy.map.chunk.ChunkCache;
 import com.naxanria.mappy.map.waypoint.WayPoint;
 import com.naxanria.mappy.map.waypoint.WayPointEditor;
 import com.naxanria.mappy.map.waypoint.WayPointManager;
+import com.naxanria.mappy.mixin.IMinecraftClientMixin;
 import com.naxanria.mappy.util.MathUtil;
 import com.naxanria.mappy.util.RandomUtil;
 import com.naxanria.mappy.util.StackUtil;
@@ -23,73 +24,75 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BoundingBox;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.dimension.DimensionType;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class Map
 {
+
   private static final BlockState AIR_STATE = Blocks.AIR.getDefaultState();
   private static final BlockState CAVE_AIR_STATE = Blocks.CAVE_AIR.getDefaultState();
   private static final BlockState VOID_AIR_STATE = Blocks.VOID_AIR.getDefaultState();
-  
+
   private static final MinecraftClient client = MinecraftClient.getInstance();
-  
+
   private MapInfoLineManager manager;
   private MapInfoLine playerPositionInfo = new MapInfoLine(Alignment.Center, "0 0 0");
   private MapInfoLine biomeInfo = new MapInfoLine(Alignment.Center, "plains");
   private MapInfoLine inGameTimeInfo = new MapInfoLine(Alignment.Center, "00:00");
   private MapInfoLine fpsInfo = new MapInfoLine(Alignment.Center, "60 fps");
   private MapInfoLine directionInfo = new MapInfoLine(Alignment.Center, "north");
-  
+
   private int size = 64;
   private int width = size, height = size;
   private int sizeX = size, sizeZ = size;
   private int scale = 1;
-  
+
   private TriValue<BlockPos, BlockState, Integer> debugData;
-  
+
   private Biome biome;
-  
+
   private NativeImage image;
-  
+
   private List<MapIcon.Player> players = new ArrayList<>();
   private MapIcon.Player playerIcon;
   private List<MapIcon.Waypoint> waypoints = new ArrayList<>();
   private List<MapIcon.Entity> entities = new ArrayList<>();
-  
-  
+
+
   private PlayerEntity locPlayer = null;
-  
+
   private EffectState effects = EffectState.NONE;
-  
-  
+
+
   private boolean showMap;
   private boolean showPosition;
   private boolean showTime;
   private boolean showBiome;
-  
+
   public Map()
   {
     // todo: check what that boolean value actually does.
     image = new NativeImage(NativeImage.Format.RGBA, width, height, false);
-    
+
     manager = new MapInfoLineManager(this);
   }
-  
+
   public void update()
   {
     if (!Mappy.showMap)
     {
       return;
     }
-    
+
     PlayerEntity player = client.player;
     if (player != null)
     {
@@ -97,47 +100,49 @@ public class Map
       {
         playerIcon = new MapIcon.Player(this, player, true);
       }
-      
+
       if (locPlayer == null)
       {
         WayPointManager.INSTANCE.load();
         locPlayer = player;
       }
-      
+
       itemCheck();
-      
+
       playerIcon.setPosition(size / 2, size / 2);
-      
+
       generate(player);
-  
+
       updateInfo(player);
-      
+
       updateStatusEffects();
-  
+
 //      image.fillRGBA(10, 10, 10, 10, 0xff0000ff);
 
       MapGUI.instance.markDirty();
-    }
-    else
+    } else
     {
       locPlayer = null;
     }
   }
-  
+
   private void itemCheck()
   {
     boolean inHotBar = Settings.inHotBar;
     showMap = Settings.mapItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.mapItem);
-    showPosition = Settings.showPosition && (Settings.positionItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.positionItem));
-    showTime = Settings.showTime && (Settings.timeItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.timeItem));
-    showBiome = Settings.showBiome && (Settings.biomeItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.biomeItem));
+    showPosition = Settings.showPosition &&
+      (Settings.positionItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.positionItem));
+    showTime = Settings.showTime &&
+      (Settings.timeItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.timeItem));
+    showBiome = Settings.showBiome &&
+      (Settings.biomeItem.equals("") || StackUtil.contains(locPlayer.inventory, inHotBar, Settings.biomeItem));
   }
-  
+
   private void updateStatusEffects()
   {
     /*
-    * Based on code by ThexXTURBOXx in pull request #5
-    * */
+     * Based on code by ThexXTURBOXx in pull request #5
+     * */
     Collection<StatusEffectInstance> statusEffects = locPlayer.getStatusEffects();
     if (statusEffects.size() > 0)
     {
@@ -156,99 +161,98 @@ public class Map
           }
         }
       }
-      
+
       if (!showing)
       {
         effects = EffectState.NONE;
       }
-    }
-    else
+    } else
     {
       effects = EffectState.NONE;
     }
   }
-  
+
   private void resize(int newSize)
   {
     image = new NativeImage(NativeImage.Format.RGBA, newSize, newSize, false);
     System.out.println("Map resized to " + newSize + "x" + newSize);
   }
-  
+
   public void onConfigChanged()
   {
     int configScale = Settings.scale;
     int configSize = Settings.mapSize;
-    
+
     boolean resize = false;
-    
+
     if (configScale != scale)
     {
       scale = configScale;
       resize = true;
     }
-    
+
 
     if (configSize != size)
     {
       size = configSize;
       resize = true;
     }
-  
+
     if (resize)
     {
       size = configSize * scale;
       resize(size);
     }
   }
-  
+
   private void updateInfo(PlayerEntity player)
   {
     manager.clear();
-    
+
     if (showPosition)
     {
       BlockPos playerPos = client.player.getBlockPos();
       playerPositionInfo.setText(playerPos.getX() + " " + playerPos.getY() + " " + playerPos.getZ());
       manager.add(playerPositionInfo);
     }
-    
+
     if (showBiome)
     {
       biomeInfo.setText(I18n.translate(biome.getTranslationKey()));
       manager.add(biomeInfo);
     }
-    
+
     if (Settings.showFPS)
     {
-      fpsInfo.setText(MinecraftClient.getCurrentFps() + " fps");
+      fpsInfo.setText(IMinecraftClientMixin.getCurrentFps() + " fps");
       manager.add(fpsInfo);
     }
-    
+
     if (showTime)
     {
       inGameTimeInfo.setText(getTimeFormatted(client.world.getTimeOfDay()));
       manager.add(inGameTimeInfo);
     }
-    
+
     if (Settings.showDirection)
     {
       Direction direction = player.getMovementDirection();
-      
+
       directionInfo.setText(direction.asString());
       manager.add(directionInfo);
     }
-    
+
     if (Mappy.debugMode)
     {
       manager.add(new MapInfoLine(Alignment.Center, (locPlayer.headYaw * -1 % 360) + ""));
     }
   }
-  
+
   public EffectState getEffects()
   {
     return effects;
   }
-  
+
   private String getTimeFormatted(long time)
   {
 //    return time + "";
@@ -266,36 +270,36 @@ public class Map
 
     return ((h < 10) ? "0" + h : h) + ":" + ((m < 10) ? "0" + m : m);
   }
-  
+
   public TriValue<BlockPos, BlockState, Integer> getDebugData()
   {
     return debugData;
   }
-  
+
   public void generate(PlayerEntity player)
   {
     World world = player.world;
     BlockPos pos = player.getBlockPos();
-  
+
     biome = world.getBiome(pos);
     DimensionType type = world.dimension.getType();
-    
+
 //    boolean nether = type == DimensionType.THE_NETHER;
 //
-    
+
     int scaled = scale * size;
 //    int size = scaled;
     int startX = pos.getX() - scaled / 2;
     int startZ = pos.getZ() - scaled / 2;
     int endX = startX + scaled;
     int endZ = startZ + scaled;
-    
+
     ChunkCache.getPreLoader(world).update(this, startX, startZ);
-    
+
     // todo: make option to show players or not.
     players.clear();
     players.add(playerIcon);
-    
+
     List<? extends PlayerEntity> players = world.getPlayers();
     for (PlayerEntity p :
       players)
@@ -304,17 +308,17 @@ public class Map
       {
         continue;
       }
-      
+
       if (p.isSneaking() || p.isSpectator())
       {
         continue;
       }
-      
+
       BlockPos ppos = p.getBlockPos();
-     
+
       int x = ppos.getX();
       int z = ppos.getZ();
-      
+
       if (x >= startX && x <= endX && z >= startZ && z <= endZ)
       {
         MapIcon.Player playerIcon1 = new MapIcon.Player(this, p, false);
@@ -322,18 +326,18 @@ public class Map
         this.players.add(playerIcon1);
       }
     }
-    
+
     if (Settings.showEntities)
     {
       entities.clear();
-      
+
       int checkHeight = 24;
-      BlockPos start = new BlockPos(startX, player.y - checkHeight / 2, startZ);
-      BlockPos end = new BlockPos(endX, player.y + checkHeight / 2, endZ);
-      List<Entity> entities = world.getEntities((Entity) null, new BoundingBox(start, end));
-  
+      BlockPos start = new BlockPos(startX, player.getY() - checkHeight / 2, startZ);
+      BlockPos end = new BlockPos(endX, player.getY() + checkHeight / 2, endZ);
+      List<Entity> entities = world.getEntities((Entity) null, new Box(start, end));
+
       int t = 0;
-      
+
       for (Entity entity :
         entities)
       {
@@ -342,9 +346,10 @@ public class Map
           t++;
           LivingEntity livingEntity = (LivingEntity) entity;
           MapIcon.Entity mie = new MapIcon.Entity(this, entity, livingEntity instanceof HostileEntity);
-          
-          mie.setPosition(MapIcon.getScaled((int) entity.x, startX, endX, size), MapIcon.getScaled((int) entity.z, startZ, endZ, size));
-          
+
+          mie.setPosition(MapIcon.getScaled((int) entity.getX(), startX, endX, size), MapIcon.getScaled((int) entity
+            .getZ(), startZ, endZ, size));
+
           this.entities.add(mie);
         }
         if (t >= 250)
@@ -352,10 +357,10 @@ public class Map
           break;
         }
       }
-      
+
 //      System.out.println("Found " + t + " entities");
     }
-    
+
 
     waypoints.clear();
     List<WayPoint> wps = WayPointManager.INSTANCE.getWaypoints(world.dimension.getType().getRawId());
@@ -377,86 +382,87 @@ public class Map
     }
 
   }
-  
+
   protected boolean isAir(BlockState state)
   {
     return state.isAir() || state == AIR_STATE || state == CAVE_AIR_STATE || state == VOID_AIR_STATE;
   }
-  
+
   public List<MapIcon.Player> getPlayerIcons()
   {
     return players;
   }
-  
+
   public List<MapIcon.Waypoint> getWaypoints()
   {
     return waypoints;
   }
-  
+
   public void createWayPoint()
   {
     PlayerEntity player = client.player;
-    
+
     WayPoint wayPoint = new WayPoint();
     wayPoint.dimension = player.world.dimension.getType().getRawId();
 //    Random random = player.world.random;
     wayPoint.name = "Waypoint";
-    wayPoint.color = RandomUtil.getElement(WayPoint.WAYPOINT_COLORS); //ColorUtil.rgb(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+    wayPoint.color = RandomUtil.getElement(
+      WayPoint.WAYPOINT_COLORS); //ColorUtil.rgb(random.nextInt(255), random.nextInt(255), random.nextInt(255));
     wayPoint.pos = player.getBlockPos();
-    
+
     client.openScreen(new WayPointEditor(wayPoint, client.currentScreen, WayPointManager.INSTANCE::add));
-    
+
 //    WayPointManager.INSTANCE.add(wayPoint);
 //    WayPointManager.INSTANCE.save();
 //
 //    player.sendMessage(new StringTextComponent("Created waypoint " + wayPoint.pos.getX() + " " + wayPoint.pos.getY() + " " + wayPoint.pos.getZ()));
   }
-  
+
   public NativeImage getImage()
   {
     return image;
   }
-  
+
   public int getSize()
   {
     return size;
   }
-  
+
   public int getWidth()
   {
     return width;
   }
-  
+
   public int getHeight()
   {
     return height;
   }
-  
+
   public int getSizeX()
   {
     return sizeX;
   }
-  
+
   public int getSizeZ()
   {
     return sizeZ;
   }
-  
+
   public List<MapIcon.Entity> getEntities()
   {
     return entities;
   }
-  
+
   public MapInfoLineManager getManager()
   {
     return manager;
   }
-  
+
   public void onConfigChanged(ConfigBase<?> configBase)
   {
     onConfigChanged();
   }
-  
+
   public boolean canShowMap()
   {
     return showMap;

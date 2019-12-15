@@ -15,9 +15,6 @@ import net.fabricmc.fabric.api.event.client.ClientTickCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.text.StringTextComponent;
-import net.minecraft.text.Style;
-import net.minecraft.text.TextFormat;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -27,21 +24,21 @@ import java.io.IOException;
 public class Mappy implements ClientModInitializer
 {
   public static final String MODID = "mappy";
-  
+
   public static Map map = new Map();
   private File output;
-  
+
   public static boolean debugMode = false;
   public static boolean showMap = true;
-  
+
   @Override
   public void onInitializeClient()
   {
     output = new File(FabricLoader.getInstance().getGameDirectory(), "/map/image.png");
     output.getParentFile().mkdirs();
-  
+
     KeyBindingRegistry.INSTANCE.addCategory(MODID);
-  
+
     File configFile = new File(FabricLoader.getInstance().getConfigDirectory(), MODID + "/" + MODID + ".cfg");
     configFile.getParentFile().mkdirs();
     if (!configFile.exists())
@@ -54,13 +51,13 @@ public class Mappy implements ClientModInitializer
         e.printStackTrace();
       }
     }
-  
+
     Config.registerListener(map::onConfigChanged);
-    
+
     Config config = new Config(configFile);
-    
+
     showMap = config.getShowMap();
-  
+
     KeyHandler.INSTANCE.register(new KeyParser(createKeyBinding("waypoint_create", GLFW.GLFW_KEY_B))
     {
       @Override
@@ -75,7 +72,7 @@ public class Mappy implements ClientModInitializer
         return mc.player != null && mc.currentScreen == null;
       }
     });
-    
+
     KeyHandler.INSTANCE.register(new KeyParser(createKeyBinding("hide_map", GLFW.GLFW_KEY_H))
     {
       @Override
@@ -86,7 +83,7 @@ public class Mappy implements ClientModInitializer
         config.setShowMap(show);
       }
     });
-    
+
     KeyHandler.INSTANCE.register(new KeyParser(createKeyBinding("waypoints_list", GLFW.GLFW_KEY_U))
     {
       @Override
@@ -94,19 +91,19 @@ public class Mappy implements ClientModInitializer
       {
         MinecraftClient.getInstance().openScreen(new WayPointListEditor(null));
       }
-  
+
       @Override
       public boolean isListening()
       {
         return mc.player != null && mc.currentScreen == null;
       }
     });
-  
+
     ClientTickCallback.EVENT.register(ClientHandler::tick);
-  
+
     MapGUI mapGUI = new MapGUI(map, 4, DrawPosition.TOP_RIGHT);
   }
-  
+
   private FabricKeyBinding createKeyBinding(String name, int key)
   {
     return FabricKeyBinding.Builder.create(new Identifier(MODID, name), InputUtil.Type.KEYSYM, key, MODID).build();

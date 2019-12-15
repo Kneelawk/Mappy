@@ -88,7 +88,8 @@ public abstract class MapIcon<T extends MapIcon<T>> extends DrawableHelperBase
       
       if (!self && Settings.showPlayerNames)
       {
-        drawStringCenteredBound(client.textRenderer, player.getName().getString(), drawX + size / 2, drawY - size / 2 - 10, 0, client.window.getScaledWidth(), WHITE);
+        drawStringCenteredBound(client.textRenderer, player.getName().getString(), drawX + size / 2, drawY - size / 2 - 10, 0, client
+                .getWindow().getScaledWidth(), WHITE);
       }
     }
   }

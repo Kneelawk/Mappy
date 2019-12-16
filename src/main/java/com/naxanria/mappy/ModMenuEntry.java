@@ -54,7 +54,7 @@ public class ModMenuEntry implements ModMenuApi
     general.addEntry(
       entryBuilder.startBooleanToggle(lang("shaded"), Settings.shaded).setDefaultValue(() -> Settings.shaded)
         .setSaveConsumer((b) -> Settings.shaded = b).build());
-    general.addEntry(entryBuilder.startIntSlider(lang("shade_strength"), 2, 16, 18 - Settings.maxDifference)
+    general.addEntry(entryBuilder.startIntSlider(lang("shade_strength"), 18 - Settings.maxDifference, 0, 16)
       .setDefaultValue(() -> 18 - Settings.maxDifference).setSaveConsumer((i) -> Settings.maxDifference = 18 - i)
       .build());
 

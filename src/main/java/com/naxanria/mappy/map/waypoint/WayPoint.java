@@ -54,7 +54,7 @@ public class WayPoint implements Serializable<WayPoint>
     if (tag != null)
     {
       name = tag.getString("name");
-      pos = BlockPos.deserialize(new Dynamic(NbtOps.INSTANCE, tag.getCompound("pos")));
+      pos = BlockPos.deserialize(new Dynamic(NbtOps.INSTANCE, tag.get("pos")));
       dimension = tag.getInt("dimension");
       color = tag.getInt("color");
       showAlways = tag.getBoolean("showAlways");
